@@ -1,6 +1,7 @@
 using EduTrack.Application.DTOs;
 using EduTrack.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 namespace EduTrack.Api.Controllers;
 
@@ -21,12 +22,12 @@ public class AuthController : ControllerBase
     {
         try
         {
-            // El UserService maneja la autenticación y genera el token
-            var token = await _userService.AuthenticateAsync(loginDto);
+            var (accessToken, refreshToken) = await _userService.AuthenticateAsync(loginDto);
             
             return Ok(new 
             { 
-                Token = token,
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
                 Message = "Login exitoso" 
             });
         }
@@ -46,12 +47,12 @@ public class AuthController : ControllerBase
     {
         try
         {
-            // El UserService maneja el registro y genera el token automáticamente
-            var token = await _userService.RegisterAsync(registerDto);
+            var (accessToken, refreshToken) = await _userService.RegisterAsync(registerDto);
             
             return Ok(new 
             { 
-                Token = token,
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
                 Message = "Registro exitoso" 
             });
         }
@@ -65,13 +66,27 @@ public class AuthController : ControllerBase
         }
     }
 
-    // POST: api/Auth/validate
-    [HttpPost("validate")]
-    public IActionResult ValidateToken([FromHeader] string authorization)
+    // 🔥 NUEVO: POST: api/Auth/refresh
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenDto refreshTokenDto)
     {
-        if (string.IsNullOrEmpty(authorization) || !authorization.StartsWith("Bearer "))
-            return Unauthorized(new { Message = "Token no proporcionado o formato incorrecto" });
-
-        return Ok(new { Message = "Token válido" });
+        try
+        {
+            var (newAccessToken, newRefreshToken) = await _userService.RefreshTokenAsync(
+                refreshTokenDto.AccessToken, 
+                refreshTokenDto.RefreshToken
+            );
+            
+            return Ok(new 
+            { 
+                AccessToken = newAccessToken,
+                RefreshToken = newRefreshToken,
+                Message = "Tokens refrescados exitosamente" 
+            });
+        }
+        catch (SecurityTokenException ex)
+        {
+            return Unauthorized(new { Message = ex.Message });
+        }
     }
 }

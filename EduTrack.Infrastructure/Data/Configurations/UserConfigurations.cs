@@ -32,6 +32,9 @@ public class UserConfigurations : IEntityTypeConfiguration<User>
         builder.Property(u => u.PasswordHash)
             .IsRequired();
         
+        builder.Property(u => u.RefreshToken)
+            .HasMaxLength(500);
+        
         //Usuario admin de prueba 
         //No es una buena practica en entor de produccion pero para pruebas en desarrollo creo que es valido
         builder.HasData(new User

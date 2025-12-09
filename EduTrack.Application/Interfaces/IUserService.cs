@@ -10,6 +10,11 @@ public interface IUserService
     Task<UserDtos.UserResponseDTO> CreateUserAsync(UserDtos.UserCreateDTO userCreateDto);
     Task<UserDtos.UserResponseDTO?> UpdateUserAsync(UserDtos.UserUpdateDTO userUpdateDto);
     Task<UserDtos.UserResponseDTO?> DeleteUserAsync(int id);
-    Task<string> AuthenticateAsync(LoginDto loginDto);
-    Task<string> RegisterAsync(RegisterDto registerDto);
+    
+    // 🔥 MODIFICADO: Ahora devuelve AccessToken y RefreshToken
+    Task<(string AccessToken, string RefreshToken)> AuthenticateAsync(LoginDto loginDto);
+    Task<(string AccessToken, string RefreshToken)> RegisterAsync(RegisterDto registerDto);
+    
+    // 🔥 NUEVO: Método para refrescar tokens
+    Task<(string NewAccessToken, string NewRefreshToken)> RefreshTokenAsync(string accessToken, string refreshToken);
 }

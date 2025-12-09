@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using EduTrack.Application.DTOs;
@@ -5,7 +6,7 @@ using EduTrack.Application.Interfaces;
 using EduTrack.Domain.Entities;
 using EduTrack.Domain.Enums;
 using EduTrack.Domain.Interfaces;
-using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 
 namespace EduTrack.Application.Services;
 
@@ -108,9 +109,8 @@ public class UserService : IUserService
         return deletedUser == null ? null : MapToUserResponseDto(deletedUser);
     }
 
-    public async Task<string> AuthenticateAsync(LoginDto loginDto)
+    public async Task<(string AccessToken, string RefreshToken)> AuthenticateAsync(LoginDto loginDto)
     {
-        // Validación básica
         if (string.IsNullOrEmpty(loginDto.Email) || string.IsNullOrEmpty(loginDto.Password))
             throw new ArgumentException("Email y contraseña son requeridos");
 
@@ -118,24 +118,27 @@ public class UserService : IUserService
         if (user == null || user.PasswordHash != HashPassword(loginDto.Password))
             throw new UnauthorizedAccessException("Credenciales inválidas");
 
-        // 🔥 AQUÍ USAS EL TOKEN SERVICE
-        return _tokenService.GenerateToken(user.Id, user.Email, user.Role.ToString());
+        // Generar tokens
+        var accessToken = _tokenService.GenerateAccessToken(user.Id, user.Email, user.Role.ToString());
+        var refreshToken = _tokenService.GenerateRefreshToken();
+        
+        // 🔥 USA VALOR CONFIGURABLE
+        var refreshTokenExpirationDays = _tokenService.GetRefreshTokenExpirationDays();
+        
+        // Guardar refresh token en la base de datos
+        user.RefreshToken = refreshToken;
+        user.RefreshTokenExpiryDate = DateTime.UtcNow.AddDays(refreshTokenExpirationDays);
+        await _userRepository.UpdateUser(user);
+
+        return (accessToken, refreshToken);
     }
 
-    public async Task<string> RegisterAsync(RegisterDto registerDto)
+    public async Task<(string AccessToken, string RefreshToken)> RegisterAsync(RegisterDto registerDto)
     {
-        // Validar que no exista el usuario por email
-        var existingUserByEmail = await _userRepository.GetUserByEmail(registerDto.Email);
-        if (existingUserByEmail != null)
-            throw new InvalidOperationException("Ya existe un usuario con este email");
+        var existingUser = await _userRepository.GetUserByEmail(registerDto.Email);
+        if (existingUser != null)
+            throw new InvalidOperationException("El usuario ya existe");
 
-        // Validar que no exista el usuario por username
-        var allUsers = await _userRepository.GetAllUsers();
-        var existingUserByUsername = allUsers.FirstOrDefault(u => u.Username == registerDto.Username);
-        if (existingUserByUsername != null)
-            throw new InvalidOperationException("El nombre de usuario ya está en uso");
-
-        // Crear usuario
         var user = new User
         {
             Email = registerDto.Email,
@@ -146,11 +149,51 @@ public class UserService : IUserService
 
         await _userRepository.CreateUser(user);
         
-        // 🔥 AQUÍ USAS EL TOKEN SERVICE - generas token automáticamente al registrarse
-        return _tokenService.GenerateToken(user.Id, user.Email, user.Role.ToString());
+        // Generar tokens
+        var accessToken = _tokenService.GenerateAccessToken(user.Id, user.Email, user.Role.ToString());
+        var refreshToken = _tokenService.GenerateRefreshToken();
+        
+        // 🔥 USA VALOR CONFIGURABLE
+        var refreshTokenExpirationDays = _tokenService.GetRefreshTokenExpirationDays();
+        
+        // Guardar refresh token
+        user.RefreshToken = refreshToken;
+        user.RefreshTokenExpiryDate = DateTime.UtcNow.AddDays(refreshTokenExpirationDays);
+        await _userRepository.UpdateUser(user);
+
+        return (accessToken, refreshToken);
     }
 
-    // Método auxiliar para hashear contraseñas
+    public async Task<(string NewAccessToken, string NewRefreshToken)> RefreshTokenAsync(string accessToken, string refreshToken)
+    {
+        // Obtener el usuario desde el token expirado
+        var principal = _tokenService.GetPrincipalFromExpiredToken(accessToken);
+        var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userIdClaim))
+            throw new SecurityTokenException("Token inválido");
+
+        var userId = int.Parse(userIdClaim);
+        var user = await _userRepository.GetUserById(userId);
+        
+        if (user == null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryDate <= DateTime.UtcNow)
+            throw new SecurityTokenException("Refresh token inválido o expirado");
+
+        // Generar nuevos tokens
+        var newAccessToken = _tokenService.GenerateAccessToken(user.Id, user.Email, user.Role.ToString());
+        var newRefreshToken = _tokenService.GenerateRefreshToken();
+        
+        // 🔥 USA VALOR CONFIGURABLE
+        var refreshTokenExpirationDays = _tokenService.GetRefreshTokenExpirationDays();
+        
+        // Actualizar refresh token en la base de datos
+        user.RefreshToken = newRefreshToken;
+        user.RefreshTokenExpiryDate = DateTime.UtcNow.AddDays(refreshTokenExpirationDays);
+        await _userRepository.UpdateUser(user);
+
+        return (newAccessToken, newRefreshToken);
+    }
+
     private string HashPassword(string password)
     {
         using var sha256 = SHA256.Create();
