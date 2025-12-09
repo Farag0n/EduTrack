@@ -6,8 +6,8 @@ namespace EduTrack.Domain.Entities;
 public class AcademicProgram
 {
     [Key] public int Id { get; set; }
-    [Column(TypeName = "varchar")] public string ProgramName { get; set; }
-    [Column(TypeName = "varchar")] public string Faculty { get; set; }
+    [Column(TypeName = "varchar(100)")] public string ProgramName { get; set; }
+    [Column(TypeName = "varchar(100)")] public string Faculty { get; set; }
     public int Credits { get; set; }
     
     //FK para relacion de muchos a muchos

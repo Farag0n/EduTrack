@@ -1,0 +1,12 @@
+/home/faragon/Desktop/repos/EduTrack/EduTrack.Domain/bin/Debug/net9.0/EduTrack.Domain.deps.json
+/home/faragon/Desktop/repos/EduTrack/EduTrack.Domain/bin/Debug/net9.0/EduTrack.Domain.dll
+/home/faragon/Desktop/repos/EduTrack/EduTrack.Domain/bin/Debug/net9.0/EduTrack.Domain.pdb
+/home/faragon/Desktop/repos/EduTrack/EduTrack.Domain/obj/Debug/net9.0/EduTrack.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/home/faragon/Desktop/repos/EduTrack/EduTrack.Domain/obj/Debug/net9.0/EduTrack.Domain.AssemblyInfoInputs.cache
+/home/faragon/Desktop/repos/EduTrack/EduTrack.Domain/obj/Debug/net9.0/EduTrack.Domain.AssemblyInfo.cs
+/home/faragon/Desktop/repos/EduTrack/EduTrack.Domain/obj/Debug/net9.0/EduTrack.Domain.csproj.CoreCompileInputs.cache
+/home/faragon/Desktop/repos/EduTrack/EduTrack.Domain/obj/Debug/net9.0/EduTrack.Domain.sourcelink.json
+/home/faragon/Desktop/repos/EduTrack/EduTrack.Domain/obj/Debug/net9.0/EduTrack.Domain.dll
+/home/faragon/Desktop/repos/EduTrack/EduTrack.Domain/obj/Debug/net9.0/refint/EduTrack.Domain.dll
+/home/faragon/Desktop/repos/EduTrack/EduTrack.Domain/obj/Debug/net9.0/EduTrack.Domain.pdb
+/home/faragon/Desktop/repos/EduTrack/EduTrack.Domain/obj/Debug/net9.0/ref/EduTrack.Domain.dll
